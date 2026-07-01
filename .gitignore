@@ -1,0 +1,68 @@
+# ──────────────────────────────────────────────────────────────────────────
+# Secrets / environment files — never commit real credentials
+# ──────────────────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!*.env.example
+!.env.local.example
+
+# ──────────────────────────────────────────────────────────────────────────
+# Python / Backend
+# ──────────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Alembic — keep migration scripts, ignore nothing extra here
+# (versions/ files ARE committed; only this ignores stray local db files)
+*.sqlite3
+*.db
+
+# Generated PDF reports (runtime artifacts, not source)
+backend/storage/reports/*.pdf
+
+# ──────────────────────────────────────────────────────────────────────────
+# Node / Frontend
+# ──────────────────────────────────────────────────────────────────────────
+node_modules/
+.npm/
+.pnp/
+.pnp.js
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.vercel/
+next-env.d.ts
+
+# ──────────────────────────────────────────────────────────────────────────
+# Editor / OS
+# ──────────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ──────────────────────────────────────────────────────────────────────────
+# Docker
+# ──────────────────────────────────────────────────────────────────────────
+*.pid
+
+# ──────────────────────────────────────────────────────────────────────────
+# Logs
+# ──────────────────────────────────────────────────────────────────────────
+*.log
+logs/
