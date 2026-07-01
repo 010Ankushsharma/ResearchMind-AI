@@ -1,0 +1,142 @@
+version: "3.9"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Multi-Agent Research & Report Generation Platform
+# Full local development stack — 100% free / open-source components.
+# ──────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: research_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-research_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-research_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-research_platform}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-research_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - research_net
+
+  # ── Redis (caching + Celery broker) ─────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: research_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - research_net
+
+  # ── ChromaDB (vector store for RAG) ─────────────────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: research_chromadb
+    restart: unless-stopped
+    environment:
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "FALSE"
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - research_net
+
+  # ── FastAPI Backend ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: research_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-research_user}:${POSTGRES_PASSWORD:-research_pass}@postgres:5432/${POSTGRES_DB:-research_platform}
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    networks:
+      - research_net
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Celery Worker (background agent jobs) ───────────────────────────────
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: research_celery_worker
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-research_user}:${POSTGRES_PASSWORD:-research_pass}@postgres:5432/${POSTGRES_DB:-research_platform}
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: 8000
+    depends_on:
+      - backend
+    volumes:
+      - ./backend:/app
+    networks:
+      - research_net
+    command: celery -A core.celery_app worker --loglevel=info
+
+  # ── Next.js Frontend ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: research_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - research_net
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data:
+
+networks:
+  research_net:
+    driver: bridge
