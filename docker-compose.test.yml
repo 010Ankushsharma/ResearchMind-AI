@@ -1,0 +1,40 @@
+# ──────────────────────────────────────────────────────────────────────────
+# Disposable test infrastructure for integration tests.
+#
+# Unlike the unit tests in backend/tests/ (which mock the DB entirely and
+# run against nothing but pure Python logic), the integration test in
+# backend/tests/test_pipeline_integration.py exercises the REAL Postgres
+# async SQLAlchemy stack — JSONB columns, UUID columns, cascading deletes,
+# transactions — because those things behave subtly differently on a real
+# database than any in-memory fake could honestly simulate. It does NOT
+# spin up a real LLM/search call — those boundaries (CrewAI's Crew.kickoff,
+# the web_search/scraping tools) are mocked, since hitting real free-tier
+# providers in CI would be slow, flaky, and would burn shared rate limits.
+#
+# Usage:
+#   docker compose -f docker-compose.test.yml up -d
+#   cd backend && DATABASE_URL=postgresql+asyncpg://test:test@localhost:5433/test_db \
+#       pytest tests/test_pipeline_integration.py -v
+#   docker compose -f docker-compose.test.yml down -v
+#
+# Or simply: make test-integration
+# ──────────────────────────────────────────────────────────────────────────
+
+services:
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: research_postgres_test
+    restart: "no"
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test_db
+    ports:
+      - "5433:5432"  # distinct port from the dev stack so both can run side by side
+    tmpfs:
+      - /var/lib/postgresql/data  # ephemeral — wiped on every `down -v` / container removal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
