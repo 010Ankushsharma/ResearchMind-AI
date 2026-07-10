@@ -1,0 +1,38 @@
+# ──────────────────────────────────────────────────────────────────────────
+# Backend Docker build context exclusions
+# ──────────────────────────────────────────────────────────────────────────
+
+# Secrets — never bake into an image
+.env
+.env.*
+!.env.example
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Tests (not needed at runtime)
+tests/
+
+# Generated runtime artifacts
+storage/reports/*.pdf
+
+# Version control / editor
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Docs
+README.md
+*.md
