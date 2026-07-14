@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Subtle ambient glow behind the main content, evoking the
+     Perplexity/Linear-style "premium AI SaaS" dark theme. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(circle at 50% -10%, rgba(59, 130, 246, 0.12), transparent 55%);
+    pointer-events: none;
+  }
+
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.35);
+  }
+
+  /* Visible keyboard focus ring everywhere — accessibility floor */
+  :focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Slim, unobtrusive scrollbars matching the dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #1f2937;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #374151;
+  }
+}
+
+@layer components {
+  /* Standard card surface used across dashboard panels */
+  .panel {
+    @apply rounded-xl border border-border bg-card shadow-card;
+  }
+
+  /* Gradient text used sparingly for hero/brand moments */
+  .text-gradient-brand {
+    @apply bg-gradient-primary-accent bg-clip-text text-transparent;
+  }
+
+  /* Live "agent is working" status dot */
+  .status-dot-active {
+    @apply inline-block h-2 w-2 rounded-full bg-primary animate-pulse-dot;
+  }
+  .status-dot-done {
+    @apply inline-block h-2 w-2 rounded-full bg-success;
+  }
+  .status-dot-pending {
+    @apply inline-block h-2 w-2 rounded-full bg-border;
+  }
+  .status-dot-error {
+    @apply inline-block h-2 w-2 rounded-full bg-danger;
+  }
+
+  /* Respect reduced-motion preferences across all custom animations */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-pulse-dot,
+    .animate-fade-in,
+    .animate-agent-typing {
+      animation: none !important;
+    }
+  }
+}
